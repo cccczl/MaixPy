@@ -13,7 +13,7 @@ else:
 sys.path.append('/flash')
 
 print("[MaixPy] init end") # for IDE
-for i in range(200):
+for _ in range(200):
     time.sleep_ms(1) # wait for key interrupt(for maixpy ide)
 
 # check IDE mode
@@ -61,12 +61,11 @@ if "boot.py" in dirList:
     with open("boot.py") as f:
         exec(f.read())
     sys.exit()
-else:
-    if "boot.py" in os.listdir("/flash"):
-        print(banner)
-        with open("/flash/boot.py") as f:
-            exec(f.read())
-        sys.exit()
+elif "boot.py" in os.listdir("/flash"):
+    print(banner)
+    with open("/flash/boot.py") as f:
+        exec(f.read())
+    sys.exit()
 
 # detect boot.py
 boot_py = '''
@@ -199,10 +198,8 @@ except KeyboardInterrupt:
     sys.exit()
 '''
 
-f = open("/flash/boot.py", "wb")
-f.write(boot_py)
-f.close()
-
+with open("/flash/boot.py", "wb") as f:
+    f.write(boot_py)
 print(banner)
 with open("/flash/boot.py") as f:
     exec(f.read())

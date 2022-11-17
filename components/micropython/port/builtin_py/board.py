@@ -55,7 +55,7 @@ class Board_Info:
     def pin_map(self,Pin = None):
         num_len = 10
         str_len = 23
-        if Pin == None :
+        if Pin is None:
             num_sum_length = num_len
             str_sum_length = str_len
             Pin_str_obj = "Pin"
@@ -66,17 +66,20 @@ class Board_Info:
             fun_str_obj_length = len(fun_str_obj)
             fun_str_obj_front = 5
             fun_str_obj_rear = str_sum_length - fun_str_obj_front - fun_str_obj_length
-            print("|%s%s%s|%s%s%s|"%(str(Pin_str_obj_front * '-'),Pin_str_obj,str(Pin_str_obj_rear * '-'),str(fun_str_obj_front * '-'),fun_str_obj,str(fun_str_obj_rear*'-')))
-            for i in range(0,len(self.pin_name)):
+            print(
+                f"|{str(Pin_str_obj_front * '-')}{Pin_str_obj}{str(Pin_str_obj_rear * '-')}|{str(fun_str_obj_front * '-')}{fun_str_obj}{str(fun_str_obj_rear * '-')}|"
+            )
+
+            num_front = 3
+            str_front = 5
+            for i in range(len(self.pin_name)):
                 num = str(i)
                 num_length = len(num)
-                num_front = 3
                 num_rear = num_sum_length - num_front - num_length
                 str_length = len(self.pin_name[i])
-                str_front = 5
                 str_rear = str_sum_length - str_front - str_length
                 print("|%s%d%s|%s%s%s|"%(str(num_front * ' '),i,str(num_rear * ' '),str(str_front * ' '),self.pin_name[i],str(str_rear*' ')))
-                print("+%s|%s+"%(str(num_sum_length*'-'),str(str_sum_length*'-')))
+                print(f"+{str(num_sum_length * '-')}|{str(str_sum_length * '-')}+")
         elif isinstance(Pin,int) and Pin < 0 or Pin > 47:
             print("Pin num must in range[0,47]")
             return False
@@ -91,7 +94,10 @@ class Board_Info:
             Fun_str_obj_length = len(Fun_str_obj)
             Fun_str_obj_front = 5
             Fun_str_obj_rear = string_sum_length - Fun_str_obj_front - Fun_str_obj_length
-            print("|%s%s%s|%s%s%s|"%(str(pin_str_obj_front * '-'),pin_str_obj,str(pin_str_obj_rear * '-'),str(Fun_str_obj_front * '-'),Fun_str_obj,str(Fun_str_obj_rear*'-')))
+            print(
+                f"|{str(pin_str_obj_front * '-')}{pin_str_obj}{str(pin_str_obj_rear * '-')}|{str(Fun_str_obj_front * '-')}{Fun_str_obj}{str(Fun_str_obj_rear * '-')}|"
+            )
+
             Pin_str = str(Pin)
             Pin_length = len(Pin_str)
             Pin_front = 3
@@ -100,7 +106,7 @@ class Board_Info:
             string_front = 5
             string_rear = string_sum_length - string_front - string_length
             print("|%s%d%s|%s%s%s|"%(str(Pin_front * ' '),Pin,str(Pin_rear * ' '),str(string_front * ' '),self.pin_name[Pin],str(string_rear*' ')))
-            print("+%s|%s+"%(str(Pin_sum_length*'-'),str(string_sum_length*'-')))
+            print(f"+{str(Pin_sum_length * '-')}|{str(string_sum_length * '-')}+")
         else:
             print("Unknow error")
             return False

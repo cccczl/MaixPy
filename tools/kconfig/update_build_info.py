@@ -81,7 +81,12 @@ INFO_FORMAT_STR = {"header": [str_define_start_header, str_define_end_header, ti
                   }
 
 def remove_old_config_info(start_flag_str, end_flag_str, content):
-    match = re.findall(r"{}(.*){}".format(start_flag_str, end_flag_str), content, re.MULTILINE|re.DOTALL)
+    match = re.findall(
+        f"{start_flag_str}(.*){end_flag_str}",
+        content,
+        re.MULTILINE | re.DOTALL,
+    )
+
     if len(match) == 0:
         content += start_flag_str+end_flag_str
     else:
@@ -97,24 +102,22 @@ def append_time_info(time_info_filename, version_info_filename, file_type):
     content2 = ""
     content2_old = content2
     try:
-        f = open(time_info_filename)
-        content = f.read()
-        f.close()
+        with open(time_info_filename) as f:
+            content = f.read()
     except Exception:
         pass
     if version_info_filename:
         try:
-            f = open(version_info_filename)
-            content2 = f.read()
-            content2_old = content2
-            f.close()
+            with open(version_info_filename) as f:
+                content2 = f.read()
+                content2_old = content2
         except Exception:
             pass
     time_now = time.localtime(time.time())
     # remove old config info
     content = remove_old_config_info(str_time_define_start, str_time_define_end, content)
     content2 = remove_old_config_info(str_time_define_start, str_time_define_end, content2)
-    
+
     # time info
     time_define = append_format_time_str.format(time_now.tm_year,
                                         time_now.tm_mon,
@@ -146,7 +149,7 @@ def append_time_info(time_info_filename, version_info_filename, file_type):
         git_tag = ""
     # git_tag = "v0.3.2-39-gbeae86483-dirty"
     git_tag = git_tag.split("-")
-    if len(git_tag) == 0:
+    if not git_tag:
         print("== WARNING: git get info fail")
     if len(git_tag) == 1:       # bdc1dcf
         git_hash = git_tag[0]
@@ -157,16 +160,16 @@ def append_time_info(time_info_filename, version_info_filename, file_type):
         else:
             git_tag_name = git_tag[0]
             git_hash = git_tag[1]
-    elif len(git_tag) == 3:     # v0.1.1-10-bdc1dcf or v0.1.1-bdc1dcf-dirty
+    elif len(git_tag) == 3: # v0.1.1-10-bdc1dcf or v0.1.1-bdc1dcf-dirty
         if git_tag[2] == "dirty":
             git_tag_name = git_tag[0]
             git_hash = git_tag[1]
             git_dirty = git_tag[2]
         else:
-            git_tag_name = git_tag[0]+"."+git_tag[1]
+            git_tag_name = f"{git_tag[0]}.{git_tag[1]}"
             git_hash = git_tag[2]
-    else:                       # v0.1.1-10-bdc1dcf-dirty
-        git_tag_name = git_tag[0]+"."+git_tag[1]
+    else:                   # v0.1.1-10-bdc1dcf-dirty
+        git_tag_name = f"{git_tag[0]}.{git_tag[1]}"
         git_hash = git_tag[2]
         git_dirty = git_tag[3]
 
@@ -190,12 +193,11 @@ def append_time_info(time_info_filename, version_info_filename, file_type):
         dirty_value = 1 if git_dirty=="dirty" else 0
     elif file_type == "cmake":
         dirty_value = "y" if git_dirty=="dirty" else ""
+    elif git_dirty=="dirty":
+        dirty_value = "y"
     else:
-        if git_dirty=="dirty":
-            dirty_value = "y"
-        else:
-            append_format_git_str = append_format_git_str.replace("BUILD_GIT_IS_DIRTY", "# BUILD_GIT_IS_DIRTY")
-            dirty_value = " is not set"
+        append_format_git_str = append_format_git_str.replace("BUILD_GIT_IS_DIRTY", "# BUILD_GIT_IS_DIRTY")
+        dirty_value = " is not set"
     git_define = append_format_git_str.format(version_major,
                                               version_minor,
                                               version_dev,
@@ -218,38 +220,49 @@ def append_time_info(time_info_filename, version_info_filename, file_type):
             f.write(content2)
 
 def write_config(filename):
-    print("-- Update build time and version info to makefile config at: " + str(filename))
+    print(
+        f"-- Update build time and version info to makefile config at: {str(filename)}"
+    )
+
     time_info_filename = None
     version_info_filename = None
     if filename[0] != None and filename[0].lower() != "none" and os.path.exists(filename[0]):
         time_info_filename = filename[0]
     if filename[1] != None and filename[1].lower() != "none" and os.path.exists(filename[1]):
         version_info_filename = filename[1]
-    if time_info_filename == None:
+    if time_info_filename is None:
         raise Exception("param error")
     append_time_info(time_info_filename, version_info_filename, "makefile")
 
 def write_cmake(filename):
-    print("-- Update build time and version info to cmake  config  at: " + str(filename))
+    print(
+        f"-- Update build time and version info to cmake  config  at: {str(filename)}"
+    )
+
     time_info_filename = None
     version_info_filename = None
     if filename[0] != None and filename[0].lower() != "none" and os.path.exists(filename[0]):
         time_info_filename = filename[0]
     if filename[1] != None and filename[1].lower() != "none" and os.path.exists(filename[1]):
         version_info_filename = filename[1]
-    if time_info_filename == None:
+    if time_info_filename is None:
         raise Exception("param error")
     append_time_info(time_info_filename, version_info_filename, "cmake")
 
 def write_header(filename):
-    print("-- Update build time and version info to header  config  at: " + str(filename))
-    time_info_filename = None
-    version_info_filename = None
-    if filename[0] != None and filename[0].lower() != "none":
+    print(
+        f"-- Update build time and version info to header  config  at: {str(filename)}"
+    )
+
+    if filename[0] is None or filename[0].lower() == "none":
+        time_info_filename = None
+    else:
         time_info_filename = filename[0]
-    if filename[1] != None and filename[1].lower() != "none":
+    if filename[1] is None or filename[1].lower() == "none":
+        version_info_filename = None
+    else:
         version_info_filename = filename[1]
-    if time_info_filename == None:
+    if time_info_filename is None:
         raise Exception("param error")
     append_time_info(time_info_filename, version_info_filename, "header")
 
@@ -271,7 +284,7 @@ args = parser.parse_args()
 out_format = {}
 for fmt, filename, version_filename in args.configfile:
     if fmt not in OUTPUT_FORMATS.keys():
-        print("Format %s not supported! Known formats:%s" %(fmt, OUTPUT_FORMATS.keys()))
+        print(f"Format {fmt} not supported! Known formats:{OUTPUT_FORMATS.keys()}")
         sys.exit(1)
     out_format[fmt] = (filename, version_filename)
 

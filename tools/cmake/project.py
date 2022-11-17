@@ -18,7 +18,7 @@ except Exception:
     sdk_path = os.path.abspath("../../")
 project_path = sys.path[0]
 project_name = ""
-project_cmake_path = project_path+"/CMakeLists.txt"
+project_cmake_path = f"{project_path}/CMakeLists.txt"
 project_cmake_content = ""
 with open(project_cmake_path) as f:
     project_cmake_content = f.read()
@@ -27,11 +27,11 @@ if len(match) != 0:
     project_name = match[0]
     print(project_name)
 if project_name == "":
-    print("[ERROR] Can not find project name in {}".format(project_cmake_path))
+    print(f"[ERROR] Can not find project name in {project_cmake_path}")
     exit(1)
 
 
-flash_dir = sdk_path+"/tools/flash"
+flash_dir = f"{sdk_path}/tools/flash"
 if os.path.exists(flash_dir):
     sys.path.insert(1, flash_dir)
     from flash import parser as flash_parser
@@ -46,10 +46,13 @@ project_parser.add_argument('--toolchain-prefix',
                         help='toolchain prefix(e.g. mips-elf-',
                         metavar='PREFIX',
                         default="")
-project_parser.add_argument('--config_file',
-                        help='config file path, e.g. config_defaultd.mk',
-                        metavar='PATH',
-                        default="{}/config_defaults.mk".format(project_path))
+project_parser.add_argument(
+    '--config_file',
+    help='config file path, e.g. config_defaultd.mk',
+    metavar='PATH',
+    default=f"{project_path}/config_defaults.mk",
+)
+
 project_parser.add_argument('--verbose',
                         help='for build command, execute `make VERBOSE=1` to compile',
                         action="store_true",
@@ -95,13 +98,12 @@ if update_config and config_content != config_content_old:
         f.write(config_content)
     if os.path.exists("build/config/global_config.mk"):
         os.remove("build/config/global_config.mk")
-    print("generate config file at: {}".format(config_filename))
+    print(f"generate config file at: {config_filename}")
 
 # config
 if project_args.cmd == "config":
     print("config complete")
-# rebuild / build
-elif project_args.cmd == "build" or project_args.cmd == "rebuild":
+elif project_args.cmd in ["build", "rebuild"]:
     print("build now")
     time_start = time.time()
     if not os.path.exists("build"):
@@ -112,15 +114,24 @@ elif project_args.cmd == "build" or project_args.cmd == "rebuild":
             project_args.config_file = os.path.join(project_path, project_args.config_file)
         config_path = os.path.abspath(project_args.config_file)
         if not os.path.exists(config_path):
-            print("config file path error:{}".format(config_path))
+            print(f"config file path error:{config_path}")
             exit(1)
-        res = subprocess.call(["cmake", "-G", gen_project_type, "-DDEFAULT_CONFIG_FILE={}".format(config_path),  ".."])
+        res = subprocess.call(
+            [
+                "cmake",
+                "-G",
+                gen_project_type,
+                f"-DDEFAULT_CONFIG_FILE={config_path}",
+                "..",
+            ]
+        )
+
         if res != 0:
             exit(1)
     if project_args.verbose:
         res = subprocess.call(["make", "VERBOSE=1"])
     else:
-        res = subprocess.call(["make", "-j{}".format(cpu_count())])
+        res = subprocess.call(["make", f"-j{cpu_count()}"])
     if res != 0:
         exit(1)
 
@@ -128,7 +139,6 @@ elif project_args.cmd == "build" or project_args.cmd == "rebuild":
     print("==================================")
     print("build end, time last:%.2fs" %(time_end-time_start))
     print("==================================")
-# clean
 elif project_args.cmd == "clean":
     print("clean now")
     if os.path.exists("build"):
@@ -139,7 +149,6 @@ elif project_args.cmd == "clean":
         if res == 0:
             print(output.decode())
     print("clean complete")
-# distclean    
 elif project_args.cmd == "distclean":
     print("clean now")
     if os.path.exists("build"):
@@ -152,7 +161,6 @@ elif project_args.cmd == "distclean":
         os.chdir("..")
         shutil.rmtree("build")
     print("clean complete")
-# menuconfig
 elif project_args.cmd == "menuconfig":
     time_start = time.time()
     if not os.path.exists("build"):
@@ -163,20 +171,27 @@ elif project_args.cmd == "menuconfig":
             project_args.config_file = os.path.join(project_path, project_args.config_file)
         config_path = os.path.abspath(project_args.config_file)
         if not os.path.exists(config_path):
-            print("config file path error:{}".format(config_path))
+            print(f"config file path error:{config_path}")
             exit(1)
-        res = subprocess.call(["cmake", "-G", gen_project_type, "-DDEFAULT_CONFIG_FILE={}".format(config_path),  ".."])
+        res = subprocess.call(
+            [
+                "cmake",
+                "-G",
+                gen_project_type,
+                f"-DDEFAULT_CONFIG_FILE={config_path}",
+                "..",
+            ]
+        )
+
         if res != 0:
             exit(1)
     res = subprocess.call(["make", "menuconfig"])
     if res != 0:
         exit(1)
-# flash
 elif project_args.cmd == "flash":
-    flash_file_path = os.path.abspath(sdk_path+"/tools/flash/flash.py")
+    flash_file_path = os.path.abspath(f"{sdk_path}/tools/flash/flash.py")
     with open(flash_file_path) as f:
         exec(f.read())
-# clean_conf
 elif project_args.cmd == "clean_conf":
     print("clean now")
     # clean cmake config files
@@ -185,7 +200,7 @@ elif project_args.cmd == "clean_conf":
     if os.path.exists("build/config/"):
         shutil.rmtree("build/config")
     # clean flash config file
-    flash_file_path = os.path.abspath(sdk_path+"/tools/flash/flash.py")
+    flash_file_path = os.path.abspath(f"{sdk_path}/tools/flash/flash.py")
     with open(flash_file_path) as f:
         exec(f.read())
     print("clean complete")

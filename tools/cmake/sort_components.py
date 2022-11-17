@@ -16,32 +16,28 @@ if not os.path.exists(conf_file):
 
 try:
     conf = ""
-    f = open(conf_file)
-    while True:
-        line = f.readline()
-        if not line:
-            break
-        line = line.strip()
-        if line.startswith("#") or line == "":
-            continue
-        conf += line +" "
-    f.close()
+    with open(conf_file) as f:
+        while True:
+            line = f.readline()
+            if not line:
+                break
+            line = line.strip()
+            if line.startswith("#") or line == "":
+                continue
+            conf += f"{line} "
 except Exception as e:
-    print("[ERROR] "+str(e))
+    print(f"[ERROR] {str(e)}")
     exit(1)
 
 components_ordered = conf.split()
-dict_order = {}
-for i,component in enumerate(components_ordered):
-    dict_order[component] = i
-
+dict_order = {component: i for i, component in enumerate(components_ordered)}
 final_components = []
 components_not_ordered = []
 for component in components: # all components
     name = os.path.basename(component)
-    if name in dict_order.keys(): # have priority in config file
+    if name in dict_order: # have priority in config file
         find_pos = False
-        if len(final_components) == 0:
+        if not final_components:
             find_pos = True
             final_components.append(component)
         else:

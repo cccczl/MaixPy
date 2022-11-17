@@ -7,19 +7,18 @@ class Fpioa_Manager:
         self.fpioa = FPIOA()
         self.board_info = board_info
     def register(self,pin = None,function = None, force = False):
-        if pin == None or function == None:
+        if pin is None or function is None:
             print("Please enter Pin and function")
             return -1
         find_pin,find_func = self.find_dict(pin,function)
-        if (find_pin == None and find_func == None) or force:
-            self.board_dict[pin] = function
-            self.fpioa_dict[function] = pin
-            self.fpioa.set_function(pin,function)
-            return 1
-        else:
+        if (find_pin is not None or find_func is not None) and not force:
             return find_pin,find_func
+        self.board_dict[pin] = function
+        self.fpioa_dict[function] = pin
+        self.fpioa.set_function(pin,function)
+        return 1
     def unregister(self,pin = None,function = None):
-        if pin == None and function == None:
+        if pin is None and function is None:
             print("Please enter Pin and function")
             return -1
         find_pin,find_func = self.find_dict(pin,function)
@@ -40,21 +39,15 @@ class Fpioa_Manager:
         else:
             return None,None
     def __find_board_dict(self,pin):
-        if pin == None:
+        if pin is None:
             return None,None
         function = self.board_dict.get(pin)
-        if function == None:
-            return None,None
-        else :
-            return pin,self.board_dict[pin]
+        return (None, None) if function is None else (pin, self.board_dict[pin])
     def __find_fpioa_dict(self,function):
-        if function == None:
+        if function is None:
             return None,None
         pin = self.fpioa_dict.get(function)
-        if pin == None:
-            return None,None
-        else:
-            return self.fpioa_dict[function],function
+        return (None, None) if pin is None else (self.fpioa_dict[function], function)
 
 global fm
 fm=Fpioa_Manager()

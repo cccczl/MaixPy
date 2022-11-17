@@ -147,7 +147,7 @@ class Editor:
             except ImportError:
                 pass
     def goto(self, row, col):
-        self.wr("\x1b[{};{}H".format(row + 1, col + 1))
+        self.wr(f"\x1b[{row + 1};{col + 1}H")
     def clear_to_eol(self):
         self.wr("\x1b[0K")
     def cursor(self, onoff):
@@ -162,7 +162,7 @@ class Editor:
     def mouse_reporting(self, onoff):
         self.wr('\x1b[?9h' if onoff else '\x1b[?9l') 
     def scroll_region(self, stop):
-        self.wr('\x1b[1;{}r'.format(stop) if stop else '\x1b[r') 
+        self.wr(f'\x1b[1;{stop}r' if stop else '\x1b[r') 
     def scroll_up(self, scrolling):
         Editor.scrbuf[scrolling:] = Editor.scrbuf[:-scrolling]
         Editor.scrbuf[:scrolling] = [''] * scrolling
@@ -185,17 +185,17 @@ class Editor:
         self.cursor(False)
         Editor.height, Editor.width = self.get_screen_size()
         Editor.height -= 1
-        Editor.scrbuf = [(False,"\x00")] * Editor.height 
+        Editor.scrbuf = [(False,"\x00")] * Editor.height
         self.row = min(Editor.height - 1, self.row)
         self.scroll_region(Editor.height)
-        self.mouse_reporting(True) 
+        self.mouse_reporting(True)
         self.message = PYE_VERSION
         if is_linux and not is_micropython:
             signal.signal(signal.SIGWINCH, Editor.signal_handler)
         if is_micropython:
             gc.collect()
             if flag:
-                self.message += "{} Bytes Memory available".format(gc.mem_free())
+                self.message += f"{gc.mem_free()} Bytes Memory available"
     def get_input(self): 
         while True:
             in_buffer = self.rd()
@@ -209,16 +209,15 @@ class Editor:
                 c = self.KEYMAP[in_buffer]
                 if c != KEY_MOUSE:
                     return c, ""
-                else: 
-                    mouse_fct = ord((self.rd())) 
-                    mouse_x = ord(self.rd()) - 33
-                    mouse_y = ord(self.rd()) - 33
-                    if mouse_fct == 0x61:
-                        return KEY_SCRLDN, ""
-                    elif mouse_fct == 0x60:
-                        return KEY_SCRLUP, ""
-                    else:
-                        return KEY_MOUSE, [mouse_x, mouse_y, mouse_fct] 
+                mouse_fct = ord((self.rd()))
+                mouse_x = ord(self.rd()) - 33
+                mouse_y = ord(self.rd()) - 33
+                if mouse_fct == 0x60:
+                    return KEY_SCRLUP, ""
+                elif mouse_fct == 0x61:
+                    return KEY_SCRLDN, ""
+                else:
+                    return KEY_MOUSE, [mouse_x, mouse_y, mouse_fct]
             elif ord(in_buffer[0]) >= 32:
                 return KEY_NONE, in_buffer
     def display_window(self): 
@@ -256,10 +255,13 @@ class Editor:
                 i += 1
         self.goto(Editor.height, 0)
         self.hilite(1)
-        self.wr("{}{} Row: {}/{} Col: {}  {}".format(
-            self.changed, self.fname, self.cur_line + 1, self.total_lines,
-            self.col + 1, self.message)[:self.width - 1])
-        self.clear_to_eol() 
+        self.wr(
+            f"{self.changed}{self.fname} Row: {self.cur_line + 1}/{self.total_lines} Col: {self.col + 1}  {self.message}"[
+                : self.width - 1
+            ]
+        )
+
+        self.clear_to_eol()
         self.hilite(0)
         self.goto(self.row, self.col - self.margin)
         self.cursor(True)
@@ -270,7 +272,7 @@ class Editor:
         return ((self.mark, self.cur_line + 1) if self.mark < self.cur_line else
                 (self.cur_line, self.mark + 1))
     def line_edit(self, prompt, default, zap=None): 
-        push_msg = lambda msg: self.wr(msg + "\b" * len(msg)) 
+        push_msg = lambda msg: self.wr(msg + "\b" * len(msg))
         self.goto(Editor.height, 0)
         self.hilite(1)
         self.wr(prompt)
@@ -279,13 +281,13 @@ class Editor:
         res = default
         pos = len(res)
         while True:
-            key, char = self.get_input() 
+            key, char = self.get_input()
             if key == KEY_NONE: 
                 if len(prompt) + len(res) < self.width - 2:
                     res = res[:pos] + char + res[pos:]
                     self.wr(res[pos])
                     pos += len(char)
-                    push_msg(res[pos:]) 
+                    push_msg(res[pos:])
             elif key in (KEY_ENTER, KEY_TAB): 
                 self.hilite(0)
                 return res
@@ -309,13 +311,13 @@ class Editor:
             elif key == KEY_DELETE: 
                 if pos < len(res):
                     res = res[:pos] + res[pos+1:]
-                    push_msg(res[pos:] + ' ') 
+                    push_msg(f'{res[pos:]} ')
             elif key == KEY_BACKSPACE: 
                 if pos > 0:
                     res = res[:pos-1] + res[pos:]
                     self.wr("\b")
                     pos -= 1
-                    push_msg(res[pos:] + ' ') 
+                    push_msg(f'{res[pos:]} ')
             elif key == KEY_ZAP: 
                 char = self.getsymbol(self.content[self.cur_line], self.col, zap)
                 if char is not None:
@@ -324,35 +326,33 @@ class Editor:
                     self.wr(res)
                     pos = len(res)
     def getsymbol(self, s, pos, zap):
-        if pos < len(s) and zap is not None:
-            issymbol = lambda c: c.isalpha() or c.isdigit() or c in zap
-            start = stop = pos
-            while start >= 0 and issymbol(s[start]):
-                start -= 1
-            while stop < len(s) and issymbol(s[stop]):
-                stop += 1
-            return s[start+1:stop]
-        else:
+        if pos >= len(s) or zap is None:
             return None
+        issymbol = lambda c: c.isalpha() or c.isdigit() or c in zap
+        start = stop = pos
+        while start >= 0 and issymbol(s[start]):
+            start -= 1
+        while stop < len(s) and issymbol(s[stop]):
+            stop += 1
+        return s[start+1:stop]
     def find_in_file(self, pattern, col, end):
-        Editor.find_pattern = pattern 
+        Editor.find_pattern = pattern
         if Editor.case != "y":
             pattern = pattern.lower()
         try:
             rex = re_compile(pattern)
         except:
-            self.message = "Invalid pattern: " + pattern
+            self.message = f"Invalid pattern: {pattern}"
             return None
         start = self.cur_line
         if (col > len(self.content[start]) or 
             (pattern[0] == '^' and col != 0)): 
-            start, col = start + 1, 0 
+            start, col = start + 1, 0
         for line in range(start, end):
             l = self.content[line][col:]
             if Editor.case != "y":
                 l = l.lower()
-            match = rex.search(l)
-            if match: 
+            if match := rex.search(l):
                 self.cur_line = line
                 if pattern[-1:] == "$" and match.group(0)[-1:] != "$":
                     self.col = col + len(l) - len(match.group(0))
@@ -360,9 +360,8 @@ class Editor:
                     self.col = col + l.find(match.group(0))
                 return len(match.group(0))
             col = 0
-        else:
-            self.message = pattern + " not found (again)"
-            return None
+        self.message = f"{pattern} not found (again)"
+        return None
     def undo_add(self, lnum, text, key, span = 1):
         self.changed = '*'
         if self.undo_limit > 0 and (

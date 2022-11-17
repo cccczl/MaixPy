@@ -35,9 +35,7 @@ dict_arg_not_save = ["sram", "terminal", "Slow"]
 
 def kflash_py_printCallback(*args, **kwargs):
     end = kwargs.pop("end", "\n")
-    msg = ""
-    for i in args:
-        msg += str(i)
+    msg = "".join(str(i) for i in args)
     msg.replace("\n", " ")
     print(msg, end=end)
 
@@ -52,7 +50,7 @@ def kflash_progress(fileTypeStr, current, total, speedStr):
 if __name__ == '__main__':
     firmware = ""
     try:
-        flash_conf_path = project_path+"/.flash.conf.json"
+        flash_conf_path = f"{project_path}/.flash.conf.json"
         if project_args.cmd == "clean_conf":
             if os.path.exists(flash_conf_path):
                 os.remove(flash_conf_path)
@@ -67,7 +65,7 @@ if __name__ == '__main__':
         project_args = project_parser.parse_args()
         project_path = ""
         if not os.path.exists(project_args.firmware):
-            print("firmware not found:{}".format(project_args.firmware))
+            print(f"firmware not found:{project_args.firmware}")
             exit(1)
         firmware = project_args.firmware
         sdk_path = ""
@@ -83,17 +81,14 @@ if __name__ == '__main__':
     for key in dict_arg.keys():
         dict_arg[key] = getattr(project_args, key)
     # check if config update, if do, use new and update config file
-    config = {}
-    for key in config_old:
-        config[key] = config_old[key]
+    config = {key: config_old[key] for key in config_old}
     for key in dict_arg.keys():
         if dict_arg[key] != project_parser.get_default(key): # arg valid, update config
             config[key] = dict_arg[key]
-        else:
-            if not key in config:
-                config[key] = dict_arg[key]
+        elif key not in config:
+            config[key] = dict_arg[key]
     if config != config_old:
-        print("-- flash config changed, update at {}".format(flash_conf_path))
+        print(f"-- flash config changed, update at {flash_conf_path}")
         with open(flash_conf_path, "w+") as f:
             json.dump(config, f, indent=4)
     # mask options that not read from file
@@ -103,22 +98,25 @@ if __name__ == '__main__':
     print("-- flash start")
     ############## Add flash command here ################
     if project_path != "":
-        firmware = project_path+"/build/"+project_name+".bin"
+        firmware = f"{project_path}/build/{project_name}.bin"
     if not os.path.exists(firmware):
-        print("[ERROR] Firmware not found:{}".format(firmware))
+        print(f"[ERROR] Firmware not found:{firmware}")
         exit(1)
     if config["port"] == "":
-        print("[ERROR] Invalid port:{}, set by -p or --port, e.g. -p /dev/ttyUSB0".format(config["port"]))
+        print(
+            f'[ERROR] Invalid port:{config["port"]}, set by -p or --port, e.g. -p /dev/ttyUSB0'
+        )
+
         exit(1)
     print("=============== flash config =============")
-    print("-- flash port    :{}".format(         config["port"]       ))
-    print("-- flash baudrate:{}".format(         config["baudrate"]   ))
-    print("-- flash board:{}".format(            config["Board"]      ))
-    print("-- flash open terminal:{}".format(    config["terminal"]   ))
-    print("-- flash download to sram:{}".format( config["sram"]       ))
-    print("-- flash noansi:{}".format(           config["noansi"]     ))
-    print("-- flash slow mode:{}".format(        config["Slow"]       ))
-    print("-- flash firmware:{}".format( firmware ))
+    print(f'-- flash port    :{config["port"]}')
+    print(f'-- flash baudrate:{config["baudrate"]}')
+    print(f'-- flash board:{config["Board"]}')
+    print(f'-- flash open terminal:{config["terminal"]}')
+    print(f'-- flash download to sram:{config["sram"]}')
+    print(f'-- flash noansi:{config["noansi"]}')
+    print(f'-- flash slow mode:{config["Slow"]}')
+    print(f"-- flash firmware:{firmware}")
     print("")
     print("-- kflash start")
     # call kflash to burn firmware
@@ -141,7 +139,7 @@ if __name__ == '__main__':
         err_msg = str(e)
     if not flash_success:
         print("[ERROR] flash firmware fail:")
-        print("     "+err_msg)
+        print(f"     {err_msg}")
         exit(1)
     ######################################################    
     print("== flash end ==")    
@@ -149,10 +147,8 @@ if __name__ == '__main__':
     ######################################################
     # open serial tool
     if config["terminal"]:
-        reset = True
-        if config["sram"]:
-            reset = False
-        sys.argv=[project_path+"/tools/flash/flash.py"]
+        reset = not config["sram"]
+        sys.argv = [f"{project_path}/tools/flash/flash.py"]
         serial.tools.miniterm.main(default_port=config["port"], default_baudrate=115200, default_dtr=reset, default_rts=reset)
         
 
